@@ -1,0 +1,22 @@
+# Read the RTL
+read_verilog rtl/fmul.v
+read_verilog rtl/fmul_clk.v
+
+# Top module
+hierarchy -top fmul_clk
+
+# Synthesize
+synth -flatten
+
+# Map to generic gates first
+dfflibmap -liberty sg13g2_stdcell_typ_1p20V_25C.lib
+abc -D 4000 -liberty sg13g2_stdcell_typ_1p20V_25C.lib
+
+# (Optional) Clean up
+opt_clean
+
+# Write final synthesized netlist
+write_verilog fmul_clk.out.v
+
+# Report timing
+stat
