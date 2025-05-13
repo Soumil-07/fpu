@@ -3,3 +3,6 @@ a.out
 *.sdf
 *.un~
 *.swp
+
+*.vcd
+compiled

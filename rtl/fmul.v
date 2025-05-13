@@ -20,7 +20,12 @@ module fmul (
     (* DONT_TOUCH = "yes" *) wire [7:0]  exp_res;
     wire        sgn_out;
 
-    assign mant_mul = mant_a * mant_b;
+    // assign mant_mul = mant_a * mant_b;
+    imul imul_inst (
+        .a(mant_a),
+        .b(mant_b),
+        .out(mant_mul)
+    );
     assign exp_res  = exp_a + exp_b - 9'd127;
     assign sgn_out  = sgn_a ^ sgn_b;
 

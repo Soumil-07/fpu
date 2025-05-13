@@ -1,6 +1,7 @@
 # Read the RTL
 read_verilog rtl/fmul.v
 read_verilog rtl/fmul_clk.v
+read_verilog rtl/imul_wrap.v
 
 # Top module
 hierarchy -top fmul_clk
