@@ -1,6 +1,8 @@
 module fmul (
-   a, b, out
+    clk, rst, a, b, out
 );
+    input wire clk, rst;
+
     input wire [31:0] a;
     input wire [31:0] b;
     output wire [31:0] out;
@@ -9,6 +11,8 @@ module fmul (
     wire [7:0] exp_a, exp_b;
     wire sgn_a, sgn_b;
 
+    reg [47:0] mant_mul_q;
+
     assign mant_a   = {1'b1, a[22:0]};
     assign mant_b   = {1'b1, b[22:0]};
     assign exp_a    = a[30:23];
@@ -16,9 +20,12 @@ module fmul (
     assign sgn_a    = a[31];
     assign sgn_b    = b[31];
 
-    (* DONT_TOUCH = "yes" *) wire [47:0] mant_mul;
-    (* DONT_TOUCH = "yes" *) wire [7:0]  exp_res;
+    wire [47:0] mant_mul;
+    wire [7:0]  exp_res;
     wire        sgn_out;
+
+    reg [31:0] special_result;
+    reg special_case;
 
     // assign mant_mul = mant_a * mant_b;
     imul imul_inst (
@@ -26,11 +33,34 @@ module fmul (
         .b(mant_b),
         .out(mant_mul)
     );
+
+    // PIPE BOUNDARY
+    reg [7:0] exp_res_q;
+    reg sgn_out_q;
+    reg special_case_q;
+    reg [31:0] special_result_q;
+
+    always @ (posedge clk) begin
+        if (!rst) begin
+            mant_mul_q <= 48'd0;
+            exp_res_q  <= 8'd0;
+            sgn_out_q  <= 1'b0;
+            special_case_q <= 1'b0;
+            special_result_q <= 32'b0;
+        end else begin
+            mant_mul_q <= mant_mul;
+            exp_res_q  <= exp_res;
+            sgn_out_q  <= sgn_out;
+            special_case_q <= special_case;
+            special_result_q <= special_result;
+        end
+    end
+
     assign exp_res  = exp_a + exp_b - 9'd127;
     assign sgn_out  = sgn_a ^ sgn_b;
 
     reg [7:0]  exp_adj;
-    (* DONT_TOUCH = "yes" *) reg [23:0] mant_out;
+    reg [23:0] mant_out;
 
     wire is_zero_a, is_zero_b, is_inf_a, is_inf_b, is_nan_a, is_nan_b;
 
@@ -41,8 +71,6 @@ module fmul (
     assign is_nan_a = (a[30:23] == 8'hFF) && (a[22:0] != 0);
     assign is_nan_b = (b[30:23] == 8'hFF) && (b[22:0] != 0);
 
-    reg [31:0] special_result;
-    reg special_case;
 
     always @(*) begin
         // handle special case FPs
@@ -64,15 +92,15 @@ module fmul (
 
 
     always @(*) begin
-        if (mant_mul[47]) begin
-           mant_out = mant_mul[46:24];
-           exp_adj  = exp_res + 1;
+        if (mant_mul_q[47]) begin
+           mant_out = mant_mul_q[46:24];
+           exp_adj  = exp_res_q + 1;
         end else begin
-            mant_out = mant_mul[45:23];
-            exp_adj = exp_res;
+            mant_out = mant_mul_q[45:23];
+            exp_adj = exp_res_q;
         end
     end
 
-    assign out = special_case ? special_result : {sgn_out, exp_adj, mant_out[22:0]};
+    assign out = special_case_q ? special_result_q : {sgn_out_q, exp_adj, mant_out[22:0]};
 
 endmodule
